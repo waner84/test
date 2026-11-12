@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>内耗账单 · 你的精神损耗对账工具</title>
+  <meta name="description" content="算算你这个月，内耗掉了多少小时。30道题，5分钟，生成你的专属内耗账单。">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+
+  <!-- ============ 密码门 ============ -->
+  <section id="screen-gate" class="screen active">
+    <div class="gate-wrap">
+      <div class="gate-card">
+        <div class="gate-badge">2026 热门版</div>
+        <h1 class="gate-title">内耗账单</h1>
+        <p class="gate-slogan">算算你这个月，内耗掉了多少小时</p>
+        <ul class="gate-points">
+          <li>📝 30 道题 · 约 5 分钟</li>
+          <li>🧾 生成专属「精神损耗账单」</li>
+          <li>🧠 5 大维度 · 附心理学解读</li>
+        </ul>
+        <div class="gate-input-row">
+          <input id="pwd-input" type="text" inputmode="text" autocomplete="off" placeholder="请输入测评密码" maxlength="20">
+        </div>
+        <button id="btn-start" class="btn-primary">开始测试</button>
+        <p id="gate-error" class="gate-error"></p>
+        <p class="gate-tip">每个密码可测试 3 次 · 剩余次数以系统记录为准</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 答题 ============ -->
+  <section id="screen-quiz" class="screen">
+    <div class="quiz-wrap">
+      <div class="quiz-top">
+        <div class="quiz-progress-text"><span id="quiz-cur">1</span> / 30</div>
+        <div class="quiz-progress-bar"><div id="quiz-progress-fill"></div></div>
+      </div>
+      <div class="quiz-card">
+        <div class="quiz-qnum">第 <span id="quiz-qnum"></span> 题</div>
+        <div id="quiz-question" class="quiz-question"></div>
+        <div id="quiz-options" class="quiz-options"></div>
+      </div>
+      <div class="quiz-nav">
+        <button id="btn-prev" class="btn-ghost">← 上一题</button>
+        <button id="btn-next" class="btn-primary">下一题 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 结果 ============ -->
+  <section id="screen-result" class="screen">
+    <div class="result-wrap">
+
+      <div id="share-banner" class="share-banner" style="display:none">
+        👀 这是朋友分享的内耗账单。测测你自己的？👇
+      </div>
+
+      <div id="result-card" class="receipt">
+        <div class="receipt-head">
+          <div class="receipt-shop">精神损耗结算中心</div>
+          <div class="receipt-title">内 耗 账 单</div>
+          <div class="receipt-no">NO.<span id="receipt-no"></span></div>
+          <div class="receipt-line">✂ - - - - - - - - - - - - - - - - - - -</div>
+        </div>
+
+        <div class="receipt-body">
+          <div class="bill-total-label">本月内耗总额</div>
+          <div class="bill-total"><span id="bill-hours">0</span><span class="bill-unit">小时</span></div>
+          <div id="bill-convert" class="bill-convert"></div>
+          <div id="tier-badge" class="tier-badge"></div>
+
+          <div class="receipt-line">✂ - - - - - - - - - - - - - - - - - - -</div>
+
+          <div class="bill-detail-label">内耗来源明细</div>
+          <div id="bill-bars" class="bill-bars"></div>
+          <div id="dual-note" class="dual-note" style="display:none"></div>
+
+          <div class="receipt-line">✂ - - - - - - - - - - - - - - - - - - -</div>
+
+          <div class="type-card">
+            <div class="type-label">你的内耗人格</div>
+            <div class="type-name"><span id="type-emoji"></span><span id="type-name"></span></div>
+            <div id="type-pct" class="type-pct"></div>
+            <div id="type-desc" class="type-desc"></div>
+            <div class="type-quote" id="type-quote"></div>
+          </div>
+
+          <div class="theory-card">
+            <div class="theory-label">📚 心理学解读 · 顺便学点新东西</div>
+            <div class="theory-title" id="theory-title"></div>
+            <div class="theory-text" id="theory-text"></div>
+          </div>
+
+          <div class="tips-card">
+            <div class="tips-label">💊 回血处方 · 今天就能用</div>
+            <ol id="type-tips" class="tips-list"></ol>
+          </div>
+
+          <div class="receipt-foot">
+            <div>本账单由 30 道题精心核算</div>
+            <div>谢谢惠顾，记得少耗一点 🌿</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <button id="btn-save-img" class="btn-primary btn-block">📥 保存结果图片</button>
+        <div class="result-actions-row">
+          <button id="btn-copy-link" class="btn-ghost btn-half">🔗 复制结果链接</button>
+          <button id="btn-retest" class="btn-ghost btn-half">🔄 再测一次</button>
+        </div>
+        <button id="btn-praise" class="btn-praise">🎁 好评有礼</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 保存图片弹窗 ============ -->
+  <div id="modal-image" class="modal" style="display:none">
+    <div class="modal-box modal-image-box">
+      <div class="modal-close" data-close="modal-image">✕</div>
+      <p class="modal-image-tip">图片已生成！<b>手机端长按图片保存到相册</b>，电脑端右键“图片另存为”。</p>
+      <img id="result-img" alt="内耗账单结果长图">
+    </div>
+  </div>
+
+  <!-- ============ 好评有礼弹窗 ============ -->
+  <div id="modal-praise" class="modal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-close" data-close="modal-praise">✕</div>
+      <div class="praise-emoji">🎁</div>
+      <div class="praise-title">好评有礼</div>
+      <div class="praise-body">
+        <p>完成店铺好评后，请添加客服微信：<b class="praise-wechat">18610881867</b></p>
+        <p>发送<b>好评截图</b>给客服，审核通过后即可获得 <b class="praise-money">1 元返现</b>！</p>
+        <p class="praise-sub">感谢你的支持，比心 ❤️</p>
+      </div>
+      <button class="btn-primary btn-block" data-close="modal-praise">我知道了</button>
+    </div>
+  </div>
+
+  <!-- ============ 确认弹窗（再测一次） ============ -->
+  <div id="modal-retest" class="modal" style="display:none">
+    <div class="modal-box">
+      <div class="praise-title">再测一次？</div>
+      <div class="praise-body"><p id="retest-msg"></p></div>
+      <div class="result-actions-row">
+        <button id="btn-retest-cancel" class="btn-ghost btn-half">取消</button>
+        <button id="btn-retest-confirm" class="btn-primary btn-half">确认，继续测</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" style="display:none"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
