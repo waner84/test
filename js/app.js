@@ -8,6 +8,10 @@
   });
 
   // ---------- 状态 ----------
+  // 演示模式：非正式部署域名（GitHub Pages、本地文件等）跳过密码门，直接答题
+  var PROD_HOST = 'neihao-test-55278.app.workbuddy.host';
+  var IS_DEMO = location.hostname !== PROD_HOST;
+
   var state = {
     password: '',          // 本次会话使用的密码
     answers: new Array(30).fill(0), // 每题已选 value（0=未答）
@@ -267,13 +271,15 @@
       if (!state.answers[i]) { state.current = i; renderQuestion(); toast('还有题目未作答'); return; }
     }
     var r = computeResult();
-    // 写入云端记录（失败不阻断结果展示）
-    cloud.database.from('test_records').insert({
-      d1: r.d[0], d2: r.d[1], d3: r.d[2], d4: r.d[3], d5: r.d[4],
-      total: r.total, bill_hours: r.hours, ptype: DIMS[r.typeIdx].typeName
-    }).then(function (res) {
-      if (res.error) { /* 记录失败不影响用户 */ }
-    });
+    // 写入云端记录（演示模式不写入；失败不阻断结果展示）
+    if (!IS_DEMO) {
+      cloud.database.from('test_records').insert({
+        d1: r.d[0], d2: r.d[1], d3: r.d[2], d4: r.d[3], d5: r.d[4],
+        total: r.total, bill_hours: r.hours, ptype: DIMS[r.typeIdx].typeName
+      }).then(function (res) {
+        if (res.error) { /* 记录失败不影响用户 */ }
+      });
+    }
     renderResult(r, false);
   }
 
@@ -349,6 +355,7 @@
 
   // ---------- 再测一次 ----------
   $('btn-retest').addEventListener('click', function () {
+    if (IS_DEMO) { startQuiz(); return; }
     $('retest-msg').textContent = '再测一次将消耗密码的 1 次测试机会（云端核销）。继续吗？';
     openModal('modal-retest');
   });
@@ -412,6 +419,8 @@
     var shared = parseSharedResult();
     if (shared) {
       renderResult(shared, true);
+    } else if (IS_DEMO) {
+      startQuiz();
     } else {
       show('gate');
     }
